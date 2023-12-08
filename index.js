@@ -15,6 +15,22 @@ app.get("/urls", async (req, res) => {
 	res.json(await Url.find({}));
 });
 
+app.get("/:preferred", (req, res) => {
+	const { preferred } = req.params;
+	res.redirect(`/url/${preferred}`);
+});
+
+app.get("/url/:preferred", async (req, res, next) => {
+	const { preferred } = req.params;
+	const url = await Url.findOne({ preferred });
+	if (url) {
+		res.redirect("http://" + url.originalUrl);
+	} else {
+		res.status(404);
+		next("url not found");
+	}
+});
+
 app.post("/url", async (req, res) => {
 	const { preferred, originalUrl } = req.body;
 	const newUrl = new Url({ preferred, originalUrl });
@@ -24,6 +40,13 @@ app.post("/url", async (req, res) => {
 	await newUrl.save();
 	console.log("saved url");
 	res.json(newUrl);
+});
+
+app.use((err, req, res, next) => {
+	if (err == 404) {
+		console.log("caught 404");
+	}
+	res.send(err);
 });
 
 app.listen(PORT, () => [console.log("listening on port " + PORT)]);
